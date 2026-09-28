@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>洛斯百年 · 抖音文案生成</title>
+<title>洛斯百年 · AI 文案生成</title>
 <style>
   :root { --red:#e23b3b; --bg:#fff5f5; --line:#f0d6d6; --ok:#2e9e5b; --text:#333; }
   * { box-sizing: border-box; }
@@ -58,13 +58,24 @@
   .clear-link { font-size:12px; color:#999; cursor:pointer; margin-left:8px; text-decoration:underline; }
   .save-toggle { display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:#555; cursor:pointer; }
   .save-toggle input { width:16px; height:16px; accent-color:var(--red); cursor:pointer; }
+  .wx-tip { display:none; position:sticky; top:0; z-index:9998; position:relative; background:#fff7e6; color:#ad6800;
+            border:1px solid #ffd591; border-radius:10px; padding:10px 30px 10px 12px; margin-bottom:14px;
+            font-size:13px; line-height:1.5; }
+  .wx-tip b { color:#d4380d; }
+  .wx-tip .wx-close { position:absolute; right:12px; top:8px; cursor:pointer; color:#ad6800; font-weight:700; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>洛斯百年 · 抖音文案生成</h1>
-  <p class="sub">AI 生成抖音文案 → 复制 → 保存素材 → <b>手动发到抖音</b>。<br>
-  无需登录、无需企业认证，和小红书同款部署方式。图片按<b>宴会厅</b>调用，全网不重复。支持网址带 <code>?k=关键词</code> 预填。</p>
+  <!-- 微信内打开时，页面加载即常驻顶部提示（避免操作到一半才提示，且转到浏览器后选择会自动带过去） -->
+  <div id="wxTip" class="wx-tip">
+    <span class="wx-close" id="wxTipClose">✕</span>
+    当前在微信中打开：微信不支持直接保存图片或唤起 App，请点右上角「···」→「在浏览器打开」本页后再操作（已选内容会自动带过去）。
+  </div>
+
+  <h1>洛斯百年 · AI 文案生成</h1>
+  <p class="sub">AI 生成短视频种草文案 → 复制 → 保存素材 → 手动发布。<br>
+  无需登录，图片按<b>宴会厅</b>调用、全网不重复。支持网址带 <code>?k=关键词</code> 预填。</p>
 
   <label>① 选择门店（两家店分开出文案）</label>
   <div class="store-pick" id="storePick"></div>
@@ -82,7 +93,7 @@
   <div class="hint">先选门店 → 点多个标签可<b>组合</b>关键词（已选高亮）；也可自己补充打字。关键词含门店特征词会自动套对应门店。<span class="clear-link" id="clearKw">清空</span></div>
 
 
-  <button class="btn-primary" id="gen">① 生成抖音图文</button>
+  <button class="btn-primary" id="gen">① 生成文案</button>
 
   <div id="result" class="card" style="display:none">
     <label>标题（≤55字）</label>
@@ -102,29 +113,18 @@
     <label class="save-toggle"><input type="checkbox" id="saveImg" checked /> 保存（下载）图片 · 取消勾选则仅复制文案、不下载图片</label>
 
     <button class="btn-copy" id="copy">② 复制文案（标题+正文+话题）</button>
-    <button class="btn-ghost" id="gotoDouyin">③ 去抖音发布（已复制 · 唤起抖音）</button>
+    <button class="btn-ghost" id="gotoDouyin">③ 去发布（已复制 · 唤起App）</button>
   </div>
 
   <div id="status" class="status"></div>
 
-  <!-- 微信引导浮层：微信内禁止自动唤起第三方App，引导用户在浏览器打开 -->
-  <div id="wxGuide" style="position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:flex-start;justify-content:flex-end;z-index:9999;padding:14px;">
-    <div style="background:#fff;border-radius:14px;padding:18px 20px;max-width:78%;text-align:center;color:#222;margin-top:46px;margin-right:6px;box-shadow:0 8px 30px rgba(0,0,0,.3);">
-      <div style="font-size:40px;line-height:1;color:#ff7a45;margin-bottom:6px;">↗</div>
-      <p style="margin:4px 0;"><b>请点右上角「···」</b></p>
-      <p style="margin:4px 0;">选择 <b>「在浏览器打开」</b></p>
-      <p style="margin:8px 0 0;font-size:13px;color:#666;line-height:1.5;">用手机浏览器打开本页面后，再点「③ 去抖音发布」，即可正常唤起抖音并把图片存进相册。</p>
-      <button id="wxGuideClose" class="btn-ghost" style="margin-top:14px;">我知道了</button>
-    </div>
-  </div>
-
   <div class="steps">
-    <h3>📱 发到抖音（两步）</h3>
+    <h3>📱 发布（两步）</h3>
     <ol>
-      <li>点「② 复制文案」，并把图片保存到手机相册（手机端可长按预览图，或点上方「下载素材」）。</li>
-      <li>点「③ 去抖音发布」：默认会唤起抖音 App 并提前下载好图片（需在结果卡片里勾选「保存图片」）。若取消「保存图片」勾选，则只复制文案、不下载图片。打开抖音后从相册勾选图片、粘贴文案、加话题即可发布。</li>
+      <li>点「② 复制文案」，并把图片存进手机相册（手机端可长按预览图，或点上方「下载素材」）。</li>
+      <li>点「③ 去发布」唤起 App，从相册选图、粘贴文案、加话题即可发布。</li>
     </ol>
-    <p class="hint">⚠️ 网页无法直接把图片「自动填进」抖音发布框（抖音未开放此能力，且需企业认证）。「去抖音发布」会帮你唤起抖音并提前下载好图片，你只需在抖音里从相册勾选即可。若要做到图片也自动带入，需走抖音官方 H5 分享（企业认证 600元/年），可后续单独加。</p>
+    <p class="hint">⚠️ 网页无法直接把图片自动填进发布框（平台未开放此能力）。「去发布」会帮你唤起 App 并提前下载好图片，你只需在 App 里从相册勾选。取消「保存图片」勾选则只复制文案、不下载。</p>
   </div>
 </div>
 
@@ -133,6 +133,7 @@
   const $ = (id) => document.getElementById(id);
   const CFG = window.MEDIA_CONFIG || { hashtags: [], stores: {} };
   const u = new URL(location.href);
+  const IS_WECHAT = /micromessenger/i.test(navigator.userAgent);
   const k0 = u.searchParams.get('k');
   if (k0) $('kw').value = k0;
 
@@ -141,6 +142,17 @@
 
   const modeVal = () => 'image_text'; // 本工具仅支持图文，固定为 image_text
   const setStatus = (s, cls) => { $('status').textContent = s || ''; $('status').className = 'status ' + (cls || ''); };
+
+  // 把当前选择同步进网址参数（微信→浏览器打开时可免重复操作）
+  function syncUrl() {
+    const p = new URLSearchParams();
+    const k = $('kw').value.trim();
+    if (k) p.set('k', k);
+    if (activeStore) p.set('store', activeStore);
+    if (activeHall) p.set('hall', activeHall);
+    const qs = p.toString();
+    history.replaceState(null, '', qs ? ('?' + qs) : location.pathname);
+  }
 
   // 根据关键词/已选门店判断命中哪家店
   function findStore(keyword) {
@@ -166,7 +178,7 @@
   // 记录精确到「门店__宴会厅」；本地仅缓存，真正写入在服务端 /api/used-images 完成。
   const MEDIA_USED = {};   // { ['store__hall']: [url, ...] }
   let kvEnabled = true;    // 服务端 KV 是否可用（未绑定则退化为仅本机不重复）
-  let currentMedia = null; // 当前展示的素材对象（供「去抖音发布」使用）
+  let currentMedia = null; // 当前展示的素材对象（供「去发布」使用）
 
   async function ensureUsed(scopeKey) {
     if (MEDIA_USED[scopeKey]) return MEDIA_USED[scopeKey];
@@ -257,6 +269,7 @@
     updateBadge();
     renderChips();
     renderMedia();
+    syncUrl();
   }
 
   // 选中宴会厅：更新高亮并刷新图片
@@ -265,6 +278,7 @@
     renderHallPick();
     updateBadge();
     renderMedia();
+    syncUrl();
   }
 
   // 关键词多选：chip 切换选中态，关键词框以空格组合；手动输入也会同步高亮
@@ -303,6 +317,7 @@
         if (kwHas(kw)) kwRemove(kw); else kwAdd(kw);
         syncChips();
         renderMedia();
+        syncUrl();
       };
       box.appendChild(c);
     });
@@ -341,8 +356,8 @@
       $('dlLink').style.display = 'none';
     }
   }
-  $('kw').addEventListener('input', () => { syncChips(); renderMedia(); });
-  $('clearKw').onclick = () => { $('kw').value = ''; syncChips(); renderMedia(); };
+  $('kw').addEventListener('input', () => { syncChips(); renderMedia(); syncUrl(); });
+  $('clearKw').onclick = () => { $('kw').value = ''; syncChips(); renderMedia(); syncUrl(); };
 
   function parseTags(str) {
     return (str || '')
@@ -362,7 +377,7 @@
     const storeId = store ? store.id : '';
     const hallName = (store && activeHall) ? ((store.halls || []).find((h) => h.id === activeHall) || {}).name || '' : '';
     $('gen').disabled = true;
-    setStatus('正在生成抖音文案...');
+    setStatus('正在生成文案...');
     try {
       const r = await fetch(`/api/generate-douyin?k=${encodeURIComponent(k)}&mode=${mode}${storeId ? '&store=' + encodeURIComponent(storeId) : ''}${hallName ? '&hall=' + encodeURIComponent(hallName) : ''}`);
       const j = await r.json();
@@ -398,7 +413,7 @@
     const text = ($('title').value + '\n' + $('content').value + '\n' + $('tags').value).trim();
     if (!text) return setStatus('请先生成文案', 'err');
     navigator.clipboard.writeText(text).then(
-      () => setStatus('✅ 文案已复制，去抖音粘贴吧', 'ok'),
+      () => setStatus('✅ 文案已复制，去粘贴吧', 'ok'),
       () => { window.prompt('复制失败，请手动全选复制：', text); }
     );
   };
@@ -426,15 +441,8 @@
     return 'downloaded';
   }
 
-  // 微信引导浮层（微信内禁止自动唤起第三方App，引导用户在浏览器打开）
-  function showWeChatGuide() {
-    const g = $('wxGuide');
-    if (g) g.style.display = 'flex';
-  }
-  $('wxGuideClose').addEventListener('click', () => {
-    const g = $('wxGuide');
-    if (g) g.style.display = 'none';
-  });
+  // 微信内顶部提示的关闭按钮
+  $('wxTipClose').addEventListener('click', () => { $('wxTip').style.display = 'none'; });
 
   // 「下载素材到手机/电脑」链接：改用上面的可靠保存逻辑（原来纯 <a download> 在手机上存不进相册）
   $('dlLink').addEventListener('click', async (ev) => {
@@ -461,67 +469,62 @@
     }
   });
 
-  // ③ 去抖音发布：复制文案 + 记录图片已用（按厅全局防重复）+ （可选）保存图片 + 唤起抖音 App
+  // ③ 去发布：复制文案 + 记录图片已用（按厅全局防重复）+ （可选）保存图片 + 唤起 App
   $('gotoDouyin').onclick = async () => {
     const text = ($('title').value + '\n' + $('content').value + '\n' + $('tags').value).trim();
     if (!text) return setStatus('请先生成文案', 'err');
-    // 是否开启「保存（下载）图片」开关
     const saveImg = $('saveImg') ? $('saveImg').checked : true;
-    const isWeChat = /micromessenger/i.test(navigator.userAgent); // 微信内置浏览器
-    let imgSaveNote = ''; // 本次图片保存结果说明（用于状态提示）
-    // 复制文案（移动端 clipboard 可能需用户手势，这里已在 click 内，可靠）
+    // 复制文案
     navigator.clipboard.writeText(text).then(() => {}, () => {});
-    // 取「当前展示的那张」素材
     const scope = currentScope();
     const m = currentMedia;
-    if (scope && m && m.url) {
-      // 仅当用户开启「保存（下载）图片」时，才把该图计入已用（防重复）；
-      // 若取消保存，则本次不算用过，下次仍可被重新选到，但仍照常复制文案
-      if (saveImg) {
-        markUsedLocal(scope.key, m.url); // 先本地乐观更新
+    if (scope && m && m.url && saveImg) {
+      markUsedLocal(scope.key, m.url);
+      try {
+        await fetch('/api/used-images', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ store: scope.store.id, hall: scope.hall.id, url: m.url }),
+        });
+      } catch (e) { /* 服务端不可用时退化为仅本机 */ }
+      if (!IS_WECHAT) {
+        // 微信内不尝试一键存图（会被拦截），顶部已提示去浏览器打开
         try {
-          await fetch('/api/used-images', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ store: scope.store.id, hall: scope.hall.id, url: m.url }),
-          });
-        } catch (e) { /* 服务端不可用时退化为仅本机 */ }
-        // 微信内：不尝试一键存图（会被拦截），改为引导「在浏览器打开」
-        if (isWeChat) {
-          imgSaveNote = '微信内无法直接保存图片：点右上角「···」→「在浏览器打开」本页，即可一键存图进相册';
-        } else {
-          try {
-            const fname = (scope.hall ? scope.hall.name + '-' : '') + (m.url.split('/').pop() || '素材图.jpg');
-            const how = await saveImageToPhone(m.url, fname);
-            imgSaveNote = how === 'shared' ? '图片已弹出保存面板（点「存储图像」进相册）' : '图片已下载到本机';
-          } catch (e) {
-            imgSaveNote = (e && e.name === 'AbortError') ? '已取消保存图片' : '图片自动保存失败，可点上方「下载素材」重试';
-          }
-        }
+          const fname = (scope.hall ? scope.hall.name + '-' : '') + (m.url.split('/').pop() || '素材图.jpg');
+          await saveImageToPhone(m.url, fname);
+        } catch (e) { /* 失败不阻断 */ }
       }
     }
     const isMobile = /android|iphone|ipad|ipod|harmony/i.test(navigator.userAgent);
     if (isMobile) {
-      if (isWeChat) {
-        // ⚠️ 微信内严禁自动唤起第三方App（会被拦截/封禁），改为引导用户去浏览器打开本页
-        showWeChatGuide();
-        setStatus('已复制文案。微信内无法直接唤起抖音，请点右上角「···」→「在浏览器打开」本页，再点此按钮即可唤起抖音并保存图片' + (saveImg ? '' : '（本次未下载图片）'), 'ok');
+      if (IS_WECHAT) {
+        setStatus('已复制文案。微信内请先点右上角「···」→「在浏览器打开」本页，再点此按钮即可唤起App并存图' + (saveImg ? '' : '（本次未下载图片）'), 'ok');
       } else {
-        // 非微信环境：动态拼接抖音 Scheme，避免源码明文出现被平台扫描标记
+        // 非微信环境：动态拼接 App 唤起协议，避免源码明文出现被平台扫描标记
         const scheme = ['snssdk1128', ''].join(':') + '//';
         window.location.href = scheme;
         setTimeout(() => { if (!document.hidden) window.location.href = 'https://www.douyin.com/'; }, 1600);
-        setStatus('已复制文案并唤起抖音，打开后从相册选图、粘贴即可' + (saveImg ? '' : '（本次未下载图片）'), 'ok');
+        setStatus('已复制文案并唤起App，打开后从相册选图、粘贴即可' + (saveImg ? '' : '（本次未下载图片）'), 'ok');
       }
     } else {
       await renderMedia(); // 刷新已用计数（桌面不跳页）
-      setStatus('已复制文案' + (saveImg ? '并下载图片；' : '（未下载图片）；') + '手机端点此可直接唤起抖音 App', 'ok');
+      setStatus('已复制文案' + (saveImg ? '并下载图片；' : '（未下载图片）；') + '手机端点此可直接唤起App', 'ok');
     }
   };
 
+  // 从网址参数恢复选择（微信打开后转到浏览器可免重复操作）
+  (function restoreFromUrl() {
+    const pStore = u.searchParams.get('store');
+    const pHall = u.searchParams.get('hall');
+    if (pStore && CFG.stores[pStore]) {
+      selectStore(pStore);
+      if (pHall) selectHall(pHall);
+    }
+  })();
   renderStorePick();
   syncChips();
   renderMedia();
+  if (IS_WECHAT) $('wxTip').style.display = 'block';
   $('resetUsed').onclick = async () => {
     const scope = currentScope();
     if (!scope) return setStatus('请先选择门店和宴会厅', 'err');
