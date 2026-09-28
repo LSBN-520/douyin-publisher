@@ -14,4 +14,4 @@ compatibility_date = "2024-09-23"
 # 然后把返回的 id 粘贴到下面的 id 字段。
 [[kv_namespaces]]
 binding = "DOUYIN_MEDIA_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "ea12d2b27ae0450ab0e45808d518f5a8"
