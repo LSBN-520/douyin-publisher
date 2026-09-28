@@ -1,0 +1,17 @@
+# Cloudflare Pages 项目配置（用于绑定 KV，实现图片全局防重复）
+# 部署方式：在 Cloudflare Dashboard 的 Pages 项目里关联本仓库/目录即可；
+# 也可在本地用 `wrangler pages deploy public` 部署。
+# 注意：KV 命名空间需先在 Cloudflare 创建，并把 id 填到下面的 id 字段。
+
+name = "douyin-publisher"
+pages_build_output_dir = "public"
+compatibility_date = "2024-09-23"
+
+# 图片「全局已调用」记录用的 KV 命名空间
+# 创建命令（任选其一）：
+#   1) Dashboard：Storage & Databases → KV → Create namespace，命名 douyin-media-used
+#   2) CLI：wrangler kv namespace create douyin-media-used
+# 然后把返回的 id 粘贴到下面的 id 字段。
+[[kv_namespaces]]
+binding = "DOUYIN_MEDIA_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

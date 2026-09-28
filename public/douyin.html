@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>洛斯百年 · 抖音文案生成</title>
+<style>
+  :root { --red:#e23b3b; --bg:#fff5f5; --line:#f0d6d6; --ok:#2e9e5b; --text:#333; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--text); line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:24px 18px 80px; }
+  h1 { color:var(--red); font-size:22px; margin:0 0 4px; }
+  .sub { color:#999; font-size:13px; margin:0 0 18px; }
+  label { display:block; font-size:13px; font-weight:600; margin:16px 0 6px; }
+  input[type=text], textarea { width:100%; padding:10px 12px; border:1px solid var(--line);
+         border-radius:8px; font-size:14px; outline:none; }
+  input[type=text]:focus, textarea:focus { border-color:var(--red); }
+  textarea { resize:vertical; }
+  .modes { display:flex; gap:18px; margin-top:8px; }
+  .modes label { font-weight:500; margin:0; display:flex; align-items:center; gap:6px; cursor:pointer; }
+  button { cursor:pointer; border:none; border-radius:8px; font-size:15px; font-weight:600; }
+  .btn-primary { background:var(--red); color:#fff; padding:12px 18px; width:100%; margin-top:18px; }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-copy { background:#111; color:#fff; padding:13px 18px; width:100%; margin-top:10px; font-size:16px; }
+  .btn-ghost { background:#fff; color:var(--red); border:1px solid var(--red); padding:10px 14px;
+               width:100%; margin-top:8px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; margin-top:18px; }
+  .hint { font-size:12px; color:#999; margin-top:4px; }
+  .preview { margin-top:10px; border-radius:10px; overflow:hidden; background:#000; }
+  .preview img, .preview video { width:100%; max-height:340px; object-fit:contain; display:block; }
+  .tag { display:inline-block; background:#fbe9e9; color:var(--red); border-radius:6px;
+         font-size:12px; padding:2px 8px; margin:3px 4px 0 0; }
+  .status { font-size:13px; margin-top:12px; min-height:18px; }
+  .status.ok { color:var(--ok); }
+  .status.err { color:var(--red); }
+  .steps { background:#fff; border:1px dashed var(--line); border-radius:12px; padding:16px 16px 16px 8px; margin-top:18px; }
+  .steps h3 { margin:0 0 8px; font-size:15px; color:var(--red); }
+  .steps ol { margin:0; padding-left:22px; font-size:13px; color:#555; }
+  .steps li { margin:6px 0; }
+  .dl { display:inline-block; margin-top:8px; font-size:13px; color:var(--red); text-decoration:underline; }
+  code { background:#fbe9e9; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .store-pick { display:flex; gap:10px; margin-top:8px; }
+  .store-pick button { flex:1; background:#fff; color:var(--red); border:1px solid var(--line);
+                       padding:11px 8px; font-size:14px; font-weight:600; }
+  .store-pick button.active { background:var(--red); color:#fff; border-color:var(--red); }
+  .hall-pick { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .hall-pick button { background:#fff; color:var(--red); border:1px solid var(--line);
+                      padding:8px 13px; font-size:13px; font-weight:600; }
+  .hall-pick button.active { background:var(--red); color:#fff; border-color:var(--red); }
+  #storeBadge { display:inline-block; background:#fbe9e9; color:var(--red); border-radius:6px;
+                font-size:12px; padding:3px 10px; margin-top:8px; font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+  .chip { background:#fff; color:#555; border:1px solid var(--line); border-radius:16px;
+          font-size:12px; padding:5px 11px; cursor:pointer; }
+  .chip:hover { border-color:var(--red); color:var(--red); }
+  .chip.sel { background:var(--red); color:#fff; border-color:var(--red); }
+  .clear-link { font-size:12px; color:#999; cursor:pointer; margin-left:8px; text-decoration:underline; }
+  .save-toggle { display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:#555; cursor:pointer; }
+  .save-toggle input { width:16px; height:16px; accent-color:var(--red); cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>洛斯百年 · 抖音文案生成</h1>
+  <p class="sub">AI 生成抖音文案 → 复制 → 保存素材 → <b>手动发到抖音</b>。<br>
+  无需登录、无需企业认证，和小红书同款部署方式。图片按<b>宴会厅</b>调用，全网不重复。支持网址带 <code>?k=关键词</code> 预填。</p>
+
+  <label>① 选择门店（两家店分开出文案）</label>
+  <div class="store-pick" id="storePick"></div>
+  <div id="storeBadge" style="display:none"></div>
+
+  <div id="hallWrap" style="display:none">
+    <label style="margin-top:16px">② 选择宴会厅（图片按厅调用）</label>
+    <div class="hall-pick" id="hallPick"></div>
+    <div class="hint">选哪个厅，下方就调用哪个厅的图片；各厅图片互不干扰、均全网不重复。</div>
+  </div>
+
+  <label style="margin-top:16px">③ 关键词（可多选组合）</label>
+  <input id="kw" type="text" placeholder="点下方标签多选组合，如：九龙湖草坪外景婚礼 直升机停机坪迎亲" />
+  <div class="chips" id="chips"></div>
+  <div class="hint">先选门店 → 点多个标签可<b>组合</b>关键词（已选高亮）；也可自己补充打字。关键词含门店特征词会自动套对应门店。<span class="clear-link" id="clearKw">清空</span></div>
+
+
+  <button class="btn-primary" id="gen">① 生成抖音图文</button>
+
+  <div id="result" class="card" style="display:none">
+    <label>标题（≤55字）</label>
+    <input id="title" type="text" />
+    <label>正文</label>
+    <textarea id="content" rows="5"></textarea>
+    <label>话题标签（空格分隔，可改）</label>
+    <input id="tags" type="text" placeholder="#南昌婚礼 #婚宴推荐" />
+    <div id="tagBox"></div>
+
+    <label id="mediaLabel" style="margin-top:16px">建议搭配图片</label>
+    <div class="preview" id="preview"></div>
+    <div class="hint" id="mediaNote"></div>
+    <a class="dl" id="dlLink" download>⬇ 下载素材到手机/电脑</a>
+    <span class="clear-link" id="resetUsed" style="margin-left:12px">重置已用图片</span>
+
+    <label class="save-toggle"><input type="checkbox" id="saveImg" checked /> 保存（下载）图片 · 取消勾选则仅复制文案、不下载图片</label>
+
+    <button class="btn-copy" id="copy">② 复制文案（标题+正文+话题）</button>
+    <button class="btn-ghost" id="gotoDouyin">③ 去抖音发布（已复制 · 唤起抖音）</button>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <div class="steps">
+    <h3>📱 发到抖音（两步）</h3>
+    <ol>
+      <li>点「② 复制文案」，并把图片保存到手机相册（手机端可长按预览图，或点上方「下载素材」）。</li>
+      <li>点「③ 去抖音发布」：默认会唤起抖音 App 并提前下载好图片（需在结果卡片里勾选「保存图片」）。若取消「保存图片」勾选，则只复制文案、不下载图片。打开抖音后从相册勾选图片、粘贴文案、加话题即可发布。</li>
+    </ol>
+    <p class="hint">⚠️ 网页无法直接把图片「自动填进」抖音发布框（抖音未开放此能力，且需企业认证）。「去抖音发布」会帮你唤起抖音并提前下载好图片，你只需在抖音里从相册勾选即可。若要做到图片也自动带入，需走抖音官方 H5 分享（企业认证 600元/年），可后续单独加。</p>
+  </div>
+</div>
+
+<script src="media.config.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const CFG = window.MEDIA_CONFIG || { hashtags: [], stores: {} };
+  const u = new URL(location.href);
+  const k0 = u.searchParams.get('k');
+  if (k0) $('kw').value = k0;
+
+  let activeStore = null; // 当前选中门店 id
+  let activeHall = null;  // 当前选中宴会厅 id
+
+  const modeVal = () => 'image_text'; // 本工具仅支持图文，固定为 image_text
+  const setStatus = (s, cls) => { $('status').textContent = s || ''; $('status').className = 'status ' + (cls || ''); };
+
+  // 根据关键词/已选门店判断命中哪家店
+  function findStore(keyword) {
+    const k = (keyword || '').trim();
+    if (activeStore && CFG.stores[activeStore]) return CFG.stores[activeStore];
+    for (const id in (CFG.stores || {})) {
+      const s = CFG.stores[id];
+      if ((s.trigger || []).some((t) => k.includes(t))) return s;
+    }
+    return null;
+  }
+
+  // —— 当前「门店 + 宴会厅」范围（图片调用与防重复都以它为单位）——
+  function currentScope() {
+    if (!activeStore || !CFG.stores[activeStore]) return null;
+    const store = CFG.stores[activeStore];
+    const hall = (store.halls || []).find((h) => h.id === activeHall);
+    if (!hall) return null;
+    return { store, hall, key: store.id + '__' + hall.id };
+  }
+
+  // —— 全局「图片已调用记录」（服务端 KV 共享，跨所有访问者防重复）——
+  // 记录精确到「门店__宴会厅」；本地仅缓存，真正写入在服务端 /api/used-images 完成。
+  const MEDIA_USED = {};   // { ['store__hall']: [url, ...] }
+  let kvEnabled = true;    // 服务端 KV 是否可用（未绑定则退化为仅本机不重复）
+  let currentMedia = null; // 当前展示的素材对象（供「去抖音发布」使用）
+
+  async function ensureUsed(scopeKey) {
+    if (MEDIA_USED[scopeKey]) return MEDIA_USED[scopeKey];
+    try {
+      const parts = scopeKey.split('__');
+      const r = await fetch('/api/used-images?store=' + encodeURIComponent(parts[0]) + '&hall=' + encodeURIComponent(parts[1] || ''));
+      const j = await r.json();
+      if (j && j.ok) {
+        MEDIA_USED[scopeKey] = Array.isArray(j.used) ? j.used : [];
+        kvEnabled = j.kvEnabled !== false;
+        return MEDIA_USED[scopeKey];
+      }
+    } catch (e) { /* 接口不可用时降级 */ }
+    MEDIA_USED[scopeKey] = MEDIA_USED[scopeKey] || [];
+    kvEnabled = false;
+    return MEDIA_USED[scopeKey];
+  }
+  // 本地先标记（乐观更新，减少闪烁），稍后由 gotoDouyin 的 POST 落地到服务端
+  function markUsedLocal(scopeKey, url) {
+    const a = MEDIA_USED[scopeKey] || (MEDIA_USED[scopeKey] = []);
+    if (url && !a.includes(url)) a.push(url);
+  }
+  async function resetUsedServer(scopeKey) {
+    try {
+      const parts = scopeKey.split('__');
+      await fetch('/api/used-images', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ store: parts[0], hall: parts[1] || '', reset: true }),
+      });
+    } catch (e) { /* 忽略 */ }
+    MEDIA_USED[scopeKey] = [];
+  }
+  // 从宴会厅图片池挑一张「未调用过」的；全用过则循环复用第一张
+  function pickUnusedImage(hall, used) {
+    const imgs = hall.images || [];
+    if (!imgs.length) return null;
+    const fresh = imgs.find((i) => !used.includes(i.url));
+    return fresh || imgs[0];
+  }
+
+  // 渲染门店选择按钮
+  function renderStorePick() {
+    const box = $('storePick');
+    box.innerHTML = '';
+    for (const id in (CFG.stores || {})) {
+      const s = CFG.stores[id];
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = s.name;
+      if (id === activeStore) b.classList.add('active');
+      b.onclick = () => selectStore(id);
+      box.appendChild(b);
+    }
+  }
+
+  // 渲染宴会厅选择按钮
+  function renderHallPick() {
+    const box = $('hallPick');
+    box.innerHTML = '';
+    const s = activeStore ? CFG.stores[activeStore] : null;
+    if (!s) return;
+    (s.halls || []).forEach((h) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = h.name;
+      if (h.id === activeHall) b.classList.add('active');
+      b.onclick = () => selectHall(h.id);
+      box.appendChild(b);
+    });
+  }
+
+  function updateBadge() {
+    const s = activeStore ? CFG.stores[activeStore] : null;
+    if (!s) { $('storeBadge').style.display = 'none'; return; }
+    const h = (s.halls || []).find((x) => x.id === activeHall);
+    $('storeBadge').style.display = 'inline-block';
+    $('storeBadge').textContent = '当前：' + s.name + (h ? ' · ' + h.name + '厅' : '（未选宴会厅）');
+  }
+
+  // 选中门店：更新高亮、展示宴会厅与关键词快捷标签
+  function selectStore(id) {
+    activeStore = id;
+    activeHall = null; // 换店后需重选宴会厅
+    $('hallWrap').style.display = 'block';
+    renderStorePick();
+    renderHallPick();
+    updateBadge();
+    renderChips();
+    renderMedia();
+  }
+
+  // 选中宴会厅：更新高亮并刷新图片
+  function selectHall(id) {
+    activeHall = id;
+    renderHallPick();
+    updateBadge();
+    renderMedia();
+  }
+
+  // 关键词多选：chip 切换选中态，关键词框以空格组合；手动输入也会同步高亮
+  const SPLIT_RE = /[\s、，,]+/;
+  function kwParts() {
+    return ($('kw').value || '').split(SPLIT_RE).map((s) => s.trim()).filter(Boolean);
+  }
+  function kwHas(kw) { return kwParts().includes(kw); }
+  function kwAdd(kw) {
+    const parts = kwParts();
+    if (!parts.includes(kw)) parts.push(kw);
+    $('kw').value = parts.join(' ');
+  }
+  function kwRemove(kw) {
+    $('kw').value = kwParts().filter((p) => p !== kw).join(' ');
+  }
+  function syncChips() {
+    const parts = kwParts();
+    document.querySelectorAll('#chips .chip').forEach((c) => {
+      if (parts.includes(c.textContent)) c.classList.add('sel');
+      else c.classList.remove('sel');
+    });
+  }
+
+  // 渲染当前门店的关键词快捷标签（可多选）
+  function renderChips() {
+    const box = $('chips');
+    box.innerHTML = '';
+    const s = activeStore ? CFG.stores[activeStore] : null;
+    if (!s) return;
+    (s.keywords || []).forEach((kw) => {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = kw;
+      c.onclick = () => {
+        if (kwHas(kw)) kwRemove(kw); else kwAdd(kw);
+        syncChips();
+        renderMedia();
+      };
+      box.appendChild(c);
+    });
+    syncChips();
+  }
+
+
+  async function renderMedia() {
+    const scope = currentScope();
+    if (!scope) {
+      currentMedia = null;
+      $('mediaLabel').textContent = '建议搭配图片';
+      $('mediaNote').textContent = activeStore ? '请先选择宴会厅，再自动挑图' : '请先选择门店和宴会厅，再自动挑图';
+      $('preview').innerHTML = '<div style="padding:20px;color:#999;text-align:center">选择门店 + 宴会厅后，这里会展示该厅一张「未被用过」的图</div>';
+      $('dlLink').style.display = 'none';
+      return;
+    }
+    const imgs = scope.hall.images || [];
+    const used = await ensureUsed(scope.key);
+    const m = pickUnusedImage(scope.hall, used);
+    currentMedia = m;
+    const usedCount = used.filter((x) => imgs.some((i) => i.url === x)).length;
+    const scopeNote = kvEnabled ? '全局' : '本机';
+    $('mediaNote').textContent = (m && m.note) || '';
+    if (imgs.length && usedCount >= imgs.length) {
+      $('mediaLabel').textContent = '建议搭配图片（' + scope.hall.name + '厅图片已全部用过，已循环复用第一张）';
+    } else {
+      $('mediaLabel').textContent = '建议搭配图片（' + scope.hall.name + '厅' + scopeNote + '已用 ' + usedCount + ' / 共 ' + imgs.length + ' 张，不重复）';
+    }
+    if (m && m.url) {
+      $('preview').innerHTML = `<img src="${m.url}" alt="素材" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div style=&quot;padding:20px;color:#999;text-align:center&quot;>该厅图片还没放进来（检查 public/media/${scope.store.id}/${scope.hall.id}/ 目录）</div>')" />`;
+      $('dlLink').href = m.url;
+      $('dlLink').style.display = 'inline-block';
+    } else {
+      $('preview').innerHTML = '<div style="padding:20px;color:#999;text-align:center">该宴会厅还未配置图片（在 media.config.js 的 halls 里填）</div>';
+      $('dlLink').style.display = 'none';
+    }
+  }
+  $('kw').addEventListener('input', () => { syncChips(); renderMedia(); });
+  $('clearKw').onclick = () => { $('kw').value = ''; syncChips(); renderMedia(); };
+
+  function parseTags(str) {
+    return (str || '')
+      .split(/[\s,，]+/).map((t) => t.trim()).filter(Boolean)
+      .map((t) => (t.startsWith('#') ? t : '#' + t));
+  }
+  function renderTags() {
+    $('tagBox').innerHTML = parseTags($('tags').value).map((t) => `<span class="tag">${t}</span>`).join('');
+  }
+  $('tags').addEventListener('input', renderTags);
+
+  $('gen').onclick = async () => {
+    const k = $('kw').value.trim();
+    if (!k) return setStatus('请填写关键词', 'err');
+    const mode = modeVal();
+    const store = findStore(k);
+    const storeId = store ? store.id : '';
+    const hallName = (store && activeHall) ? ((store.halls || []).find((h) => h.id === activeHall) || {}).name || '' : '';
+    $('gen').disabled = true;
+    setStatus('正在生成抖音文案...');
+    try {
+      const r = await fetch(`/api/generate-douyin?k=${encodeURIComponent(k)}&mode=${mode}${storeId ? '&store=' + encodeURIComponent(storeId) : ''}${hallName ? '&hall=' + encodeURIComponent(hallName) : ''}`);
+      const j = await r.json();
+      if (!j.ok) { setStatus('生成失败：' + (j.error || ''), 'err'); return; }
+      const d = j.data || {};
+      $('title').value = d.title || '';
+      $('content').value = d.content || '';
+      // 标签：接口返回的优先，再补该门店专属标签
+      const base = (d.hashtags && d.hashtags.length) ? d.hashtags : [];
+      const extra = store ? (store.hashtags || []) : [];
+      const merged = [...base, ...extra];
+      const seen = new Set();
+      $('tags').value = merged.filter((t) => {
+        const key = t.replace(/^#/, '');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).join(' ');
+      // 生成后若关键词正好命中某店但之前没手动选，自动切到该店
+      if (store && !activeStore) selectStore(store.id);
+      $('result').style.display = 'block';
+      renderTags();
+      renderMedia();
+      setStatus('✅ 文案已生成，可修改后复制发布' + (store ? '（' + store.name + (hallName ? ' · ' + hallName + '厅' : '') + '）' : ''), 'ok');
+    } catch (e) {
+      setStatus('请求失败：' + e.message, 'err');
+    } finally {
+      $('gen').disabled = false;
+    }
+  };
+
+  $('copy').onclick = () => {
+    const text = ($('title').value + '\n' + $('content').value + '\n' + $('tags').value).trim();
+    if (!text) return setStatus('请先生成文案', 'err');
+    navigator.clipboard.writeText(text).then(
+      () => setStatus('✅ 文案已复制，去抖音粘贴吧', 'ok'),
+      () => { window.prompt('复制失败，请手动全选复制：', text); }
+    );
+  };
+
+  // ③ 去抖音发布：复制文案 + 记录图片已用（按厅全局防重复）+ （可选）下载 + 唤起抖音 App
+  $('gotoDouyin').onclick = async () => {
+    const text = ($('title').value + '\n' + $('content').value + '\n' + $('tags').value).trim();
+    if (!text) return setStatus('请先生成文案', 'err');
+    // 是否开启「保存（下载）图片」开关
+    const saveImg = $('saveImg') ? $('saveImg').checked : true;
+    // 复制文案（移动端 clipboard 可能需用户手势，这里已在 click 内，可靠）
+    navigator.clipboard.writeText(text).then(() => {}, () => {});
+    // 取「当前展示的那张」素材
+    const scope = currentScope();
+    const m = currentMedia;
+    if (scope && m && m.url) {
+      // 仅当用户开启「保存（下载）图片」时，才把该图计入已用（防重复）；
+      // 若取消保存，则本次不算用过，下次仍可被重新选到，但仍照常复制文案 + 唤起抖音
+      if (saveImg) {
+        markUsedLocal(scope.key, m.url); // 先本地乐观更新
+        try {
+          await fetch('/api/used-images', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ store: scope.store.id, hall: scope.hall.id, url: m.url }),
+          });
+        } catch (e) { /* 服务端不可用时退化为仅本机 */ }
+        // 提前下载图片到本机/手机，方便抖音里从相册勾选
+        try {
+          const a = document.createElement('a');
+          a.href = m.url; a.target = '_blank'; a.rel = 'noopener';
+          a.download = '';
+          document.body.appendChild(a); a.click(); a.remove();
+        } catch (e) { /* 下载失败不阻断跳转 */ }
+      }
+    }
+    const isMobile = /android|iphone|ipad|ipod|harmony/i.test(navigator.userAgent);
+    if (isMobile) {
+      // 唤起抖音 App（snssdk1128 为抖音 URL Scheme）；若 1.6s 后仍在页面则回退到抖音官网
+      window.location.href = 'snssdk1128://';
+      setTimeout(() => { if (!document.hidden) window.location.href = 'https://www.douyin.com/'; }, 1600);
+      setStatus('已复制文案并唤起抖音，打开后从相册选图、粘贴即可' + (saveImg ? '' : '（本次未下载图片）'), 'ok');
+    } else {
+      await renderMedia(); // 刷新已用计数（桌面不跳页）
+      setStatus('已复制文案' + (saveImg ? '并下载图片；' : '（未下载图片）；') + '手机端点此可直接唤起抖音 App', 'ok');
+    }
+  };
+
+  renderStorePick();
+  syncChips();
+  renderMedia();
+  $('resetUsed').onclick = async () => {
+    const scope = currentScope();
+    if (!scope) return setStatus('请先选择门店和宴会厅', 'err');
+    if (!confirm('确认清空「' + scope.store.name + ' · ' + scope.hall.name + '厅」的【全局】已用图片记录？\n清空后将从头轮用（此操作对所有访问者生效）。')) return;
+    await resetUsedServer(scope.key);
+    await renderMedia();
+    setStatus('已重置该宴会厅的图片调用记录，可重新从头轮用', 'ok');
+  };
+</script>
+</body>
+</html>
